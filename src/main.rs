@@ -3,14 +3,14 @@ use std::process;
 use std::thread::sleep;
 use std::time::{Duration, Instant};
 
-use clap::{CommandFactory, Parser};
+use clap::Parser;
 
 /// A timer program that supports both ascending and descending formats.
 #[derive(Parser, Debug)]
-#[command(about = "A timer program that supports ascending and descending formats.")]
+#[command(author="Lukas Karafiat")]
 struct Options {
     /// Print the time in ascending format.
-    #[arg(short = 'a', long = "ascending", default_value_t)]
+    #[arg(short = 'a', long = "ascending")]
     print_ascending_time: bool,
 
     /// Print the time in descending format.
@@ -77,7 +77,7 @@ fn format_duration(seconds: Duration) -> String {
     let mut remaining_milliseconds = seconds.as_millis();
 
     let days = remaining_seconds / (60 * 60 * 24);
-    remaining_seconds %= (60 * 60 * 24);
+    remaining_seconds %= 60 * 60 * 24;
 
     let hours = remaining_seconds / (60 * 60);
     remaining_seconds %= 60 * 60;
@@ -95,10 +95,7 @@ fn format_duration(seconds: Duration) -> String {
         parts.push(format!("{}d", days));
     }
 
-    parts.push(format!("{:02}h", hours));
-    parts.push(format!("{:02}m", minutes));
-    parts.push(format!("{:02}s", seconds));
-    parts.push(format!("{:03}ms", milliseconds));
+    parts.push(format!("{hours:02}h {minutes:02}m {seconds:02}s {milliseconds:03}ms"));
 
     parts.join(" ")
 }
@@ -106,7 +103,13 @@ fn format_duration(seconds: Duration) -> String {
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let options = Options::parse();
 
-    let sleep_duration = parse_duration(options.times)?;
+    let sleep_duration = match parse_duration(options.times) {
+        Ok(duration) => duration,
+        Err(e) => {
+            eprintln!("{e}");
+            process::exit(1);
+        }
+    };
 
     let start = Instant::now();
     let tick = Duration::from_millis(10);
